@@ -68,7 +68,7 @@ def mouse_callback(event, x, y, flags, param):
 
 def load_yolo():
     net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
-    with open("coco.names", "r") as f:
+    with open("project/coco.names", "r") as f:
         classes = [line.strip() for line in f.readlines()]
     return net, classes
 
