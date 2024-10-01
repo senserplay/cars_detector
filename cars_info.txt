@@ -1,6 +1,0 @@
-
-    RED: 9;
-    GREEN: 9;
-    BLUE: 0;
-    BLACK: 1;
-    
