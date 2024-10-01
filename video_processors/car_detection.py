@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-from utils import check_intersection, increase_brightness
+import os
+from video_processors.utils import check_intersection, increase_brightness
 
 
 class CarDetector:
@@ -14,8 +15,16 @@ class CarDetector:
         self.load_yolo()
 
     def load_yolo(self):
-        self.net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
-        with open("coco.names", "r") as f:
+        weights_path = os.path.abspath("ai_config/yolov3.weights")
+        cfg_path = os.path.abspath("ai_config/yolov3.cfg")
+
+        if not os.path.exists(weights_path):
+            raise FileNotFoundError(f"Файл весов YOLO не найден: {weights_path}")
+        if not os.path.exists(cfg_path):
+            raise FileNotFoundError(f"Файл конфигурации YOLO не найден: {cfg_path}")
+
+        self.net = cv2.dnn.readNet(weights_path, cfg_path)
+        with open("ai_config/coco.names", "r") as f:
             self.classes = [line.strip() for line in f.readlines()]
 
     def detect_cars(self, video_processor, regions, frame_height, frame_weight):
@@ -33,12 +42,12 @@ class CarDetector:
             cv2.imshow('Car Detector', processed_frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            detected_cars = self.detect_cars_yolo(processed_frame, net, classes)
+            detected_cars = self.detect_cars_yolo(processed_frame, net)
             frame_with_cars = self.draw_cars(detected_cars,processed_frame)
             cv2.imshow('Cars Detection', frame_with_cars)
 
         cv2.destroyAllWindows()
-        tr = open('cars_info.txt', 'w', encoding='utf-8')
+        tr = open('result/cars_info.txt', 'w', encoding='utf-8')
         string = f"""
             RED: {self.red};
             GREEN: {self.green};
@@ -47,7 +56,7 @@ class CarDetector:
             """
         tr.write(string)
 
-    def detect_cars_yolo(self, frame, net, classes):
+    def detect_cars_yolo(self, frame, net):
         height, width, _ = frame.shape
         blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (416, 416), swapRB=True, crop=False)
         net.setInput(blob)

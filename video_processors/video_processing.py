@@ -11,7 +11,7 @@ class VideoProcessor:
     def load_video(self, path):
         self.cap = cv2.VideoCapture(path)
         if not self.cap.isOpened():
-            raise ValueError("Error: Could not open video.")
+            raise ValueError("Error: Could not open video_templates.")
 
     def get_frame(self):
         ret, frame = self.cap.read()
