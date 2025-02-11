@@ -14,7 +14,7 @@ from ultralytics.utils.plotting import Annotator, colors
 track_history = defaultdict(list)
 
 # Добавляем новые переменные для хранения точек зоны и цветов
-zone_colors = [(255, 42, 4), (37, 255, 225), (0, 255, 0), (128, 0, 128)]  # Цвета для зон
+zone_colors = [(255, 42, 4), (37, 255, 225)]  # Цвета для зон
 current_zone_points = []  # Точки текущей создаваемой зоны
 created_regions = []  # Список уже созданных зон
 color_index = 0  # Текущий индекс цвета
@@ -50,25 +50,40 @@ def mouse_callback(event, x, y, flags, param):
 
     # Mouse left button down event
     if event == cv2.EVENT_LBUTTONDOWN:
-        if len(created_regions)<4:
-            current_zone_points.append((x, y))
+        if len(created_regions)<2:
+                current_zone_points.append((x, y))
 
-            # Если установлено 4 точки, создаём многоугольную зону
-            if len(current_zone_points) == 4:
-                polygon = Polygon(current_zone_points)
-                created_regions.append({
-                    "name": "YOLOv8 Polygon Region", #!!!!!!!!!!!!!!
-                    "polygon": polygon,  # Polygon points
-                    "dragging": False,
-                    "region_color": zone_colors[color_index % len(zone_colors)],  # Цвет из списка
-                    "text_color": (255, 255, 255),  # Region Text Color
-                    "counts": 0,  # Счётчик для этой зоны
-                    "tracked_ids": set() #Id которые уже были в зоне 
-                })
-                current_zone_points = []  # Сбрасываем текущие точки
-                if color_index<3:
-                    color_index += 1  # Переходим к следующему цвету
-        
+                # Если установлено 4 точки, создаём многоугольную зону
+                if len(current_zone_points) == 4:
+                    polygon = Polygon(current_zone_points)
+                    if len(created_regions) == 0:
+                        created_regions.append({
+                            "name": "start Region", #!!!!!!!!!!!!!!
+                            "polygon": polygon,  # Polygon points
+                            "dragging": False,
+                            "region_color": zone_colors[color_index % len(zone_colors)],  # Цвет из списка
+                            "text_color": (255, 255, 255),  # Region Text Color
+                            "counts": 0,  # Счётчик для этой зоны
+                            "tracked_ids": set(), #Id которые уже были в зоне 
+                        })
+                        current_zone_points = []  # Сбрасываем текущие точки
+                        if color_index<2:
+                            color_index += 1  # Переходим к следующему цвету
+                    else:
+                        polygon = Polygon(current_zone_points)
+                        created_regions.append({
+                            "name": "end Region", #!!!!!!!!!!!!!!
+                            "polygon": polygon,  # Polygon points
+                            "dragging": False,
+                            "region_color": zone_colors[color_index % len(zone_colors)],  # Цвет из списка
+                            "text_color": (255, 255, 255),  # Region Text Color
+                            "counts": 0,  # Счётчик для этой зоны
+                            "tracked_ids": set(), #Id которые уже были в зоне 
+                        })
+                        current_zone_points = []  # Сбрасываем текущие точки
+                        if color_index<2:
+                            color_index += 1  # Переходим к следующему цвету
+
         for region in created_regions:
             if region["polygon"].contains(Point((x, y))):
                 current_region = region
@@ -182,8 +197,11 @@ def run(
                     for region in created_regions:
                         if region["polygon"].contains(Point((bbox_center[0], bbox_center[1]))):
                             # Если объект находится в зоне и его ID ещё не добавлен в tracked_ids, увеличиваем счётчик
-                            if track_id not in region["tracked_ids"]:
+
+                            if region["name"] == "end Region" and (track_id in created_regions[0]["tracked_ids"]) and (track_id not in created_regions[1]["tracked_ids"]):
                                 region["counts"] += 1  # Увеличиваем счётчик
+                                region["tracked_ids"].add(track_id)  # Добавляем ID в список учтённых
+                            if region["name"] == "start Region":
                                 region["tracked_ids"].add(track_id)  # Добавляем ID в список учтённых
 
             # Draw regions (Polygons/Rectangles)
@@ -231,6 +249,11 @@ def run(
         elif key == ord(' '):  # Нажатие пробела для паузы
             paused = not paused  # Переключение флага паузы
 
+    counter = 0  # Начальное значение счетчика
+
+    # Запись счетчика в текстовый файл перед завершением программы
+    with open("output.txt", "w", encoding="utf-8") as file:
+        file.write("Количество машин: " + str(created_regions[1]["counts"]))
     del vid_frame_count
     # video_writer.release()
     videocapture.release()
