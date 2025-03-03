@@ -124,22 +124,6 @@ def run(
 ):
     """
     Run Region counting on a video using YOLOv8 and ByteTrack.
-
-    Supports movable region for real time counting inside specific area.
-    Supports multiple regions counting.
-    Regions can be Polygons or rectangle in shape
-
-    Args:
-        weights (str): Model weights path.
-        source (str): Video file path.
-        device (str): processing device cpu, 0, 1
-        view_img (bool): Show results.
-        save_img (bool): Save results.
-        exist_ok (bool): Overwrite existing files.
-        classes (list): classes to detect and track
-        line_thickness (int): Bounding box thickness.
-        track_thickness (int): Tracking line thickness
-        region_thickness (int): Region thickness.
     """
     vid_frame_count = 0
 
@@ -156,13 +140,6 @@ def run(
 
     # Video setup
     videocapture = cv2.VideoCapture(source)
-    # frame_width, frame_height = int(videocapture.get(3)), int(videocapture.get(4))
-    # fps, fourcc = int(videocapture.get(5)), cv2.VideoWriter_fourcc(*"mp4v")
-
-    # Output setup
-    # save_dir = increment_path(Path("ultralytics_rc_output") / "exp", exist_ok)
-    # save_dir.mkdir(parents=True, exist_ok=True)
-    # video_writer = cv2.VideoWriter(str(save_dir / f"{Path(source).stem}.mp4"), fourcc, fps, (frame_width, frame_height))
 
     paused = False  # Флаг для паузы
 
@@ -173,7 +150,7 @@ def run(
             if not success:
                 break
             vid_frame_count += 1
-            if vid_frame_count % 3 != 0:
+            if vid_frame_count % 2== 0:
                 continue
             # Extract the results
             results = model.track(frame, persist=True, classes=classes)
@@ -208,53 +185,45 @@ def run(
                             if region["name"] == "start Region":
                                 region["tracked_ids"].add(track_id)  # Добавляем ID в список учтённых
 
-            # Draw regions (Polygons/Rectangles)
-            for region in created_regions:
-                region_label = str(region["counts"])
-                region_color = region["region_color"]
-                region_text_color = region["text_color"]
+        # Draw regions (Polygons/Rectangles)
+        for region in created_regions:
+            region_label = str(region["counts"])
+            region_color = region["region_color"]
+            region_text_color = region["text_color"]
 
-                polygon_coords = np.array(region["polygon"].exterior.coords, dtype=np.int32)
-                centroid_x, centroid_y = int(region["polygon"].centroid.x), int(region["polygon"].centroid.y)
+            polygon_coords = np.array(region["polygon"].exterior.coords, dtype=np.int32)
+            centroid_x, centroid_y = int(region["polygon"].centroid.x), int(region["polygon"].centroid.y)
 
-                text_size, _ = cv2.getTextSize(
-                    region_label, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, thickness=line_thickness
-                )
-                text_x = centroid_x - text_size[0] // 2
-                text_y = centroid_y + text_size[1] // 2
-                cv2.rectangle(
-                    frame,
-                    (text_x - 5, text_y - text_size[1] - 5),
-                    (text_x + text_size[0] + 5, text_y + 5),
-                    region_color,
-                    -1,
-                )
-                cv2.putText(
-                    frame, region_label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, region_text_color,
-                    line_thickness
-                )
-                cv2.polylines(frame, [polygon_coords], isClosed=True, color=region_color, thickness=region_thickness)
+            text_size, _ = cv2.getTextSize(
+                region_label, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, thickness=line_thickness
+            )
+            text_x = centroid_x - text_size[0] // 2
+            text_y = centroid_y + text_size[1] // 2
+            cv2.rectangle(
+                frame,
+                (text_x - 5, text_y - text_size[1] - 5),
+                (text_x + text_size[0] + 5, text_y + 5),
+                region_color,
+                -1,
+            )
+            cv2.putText(
+                frame, region_label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, region_text_color,
+                line_thickness
+            )
+            cv2.polylines(frame, [polygon_coords], isClosed=True, color=region_color, thickness=region_thickness)
 
-            if view_img:
-                if vid_frame_count == 1:
-                    cv2.namedWindow("Regions Counter")
-                    cv2.setMouseCallback("Regions Counter", mouse_callback)
+        if view_img:
+            if vid_frame_count == 1:
+                cv2.namedWindow("Regions Counter")
+                cv2.setMouseCallback("Regions Counter", mouse_callback)
 
-                cv2.imshow("Regions Counter", frame)
-
-            # if save_img:
-            # video_writer.write(frame)
-
-            # for region in created_regions:  # Reinitialize count for each region
-            # region["counts"] = 0
+            cv2.imshow("Regions Counter", frame)
 
         key = cv2.waitKey(1) & 0xFF  # Ожидание нажатия клавиши
         if key == ord('q'):  # Нажатие 'q' для выхода
             break
         elif key == ord(' '):  # Нажатие пробела для паузы
             paused = not paused  # Переключение флага паузы
-
-    counter = 0  # Начальное значение счетчика
 
     # Запись счетчика в текстовый файл перед завершением программы
     with open("output.txt", "w", encoding="utf-8") as file:
