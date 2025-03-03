@@ -14,11 +14,12 @@ from ultralytics.utils.plotting import Annotator, colors
 track_history = defaultdict(list)
 
 # Добавляем новые переменные для хранения точек зоны и цветов
-zone_colors = [(255, 42, 4), (37, 255, 225), (0, 255, 0), (128, 0, 128)]  # Цвета для зон
+zone_colors = [(255, 42, 4), (37, 255, 225)]  # Цвета для зон
 current_zone_points = []  # Точки текущей создаваемой зоны
 created_regions = []  # Список уже созданных зон
 color_index = 0  # Текущий индекс цвета
 current_region = None
+
 
 def mouse_callback(event, x, y, flags, param):
     """
@@ -50,25 +51,40 @@ def mouse_callback(event, x, y, flags, param):
 
     # Mouse left button down event
     if event == cv2.EVENT_LBUTTONDOWN:
-        if len(created_regions)<4:
+        if len(created_regions) < 2:
             current_zone_points.append((x, y))
 
             # Если установлено 4 точки, создаём многоугольную зону
             if len(current_zone_points) == 4:
                 polygon = Polygon(current_zone_points)
-                created_regions.append({
-                    "name": "YOLOv8 Polygon Region", #!!!!!!!!!!!!!!
-                    "polygon": polygon,  # Polygon points
-                    "dragging": False,
-                    "region_color": zone_colors[color_index % len(zone_colors)],  # Цвет из списка
-                    "text_color": (255, 255, 255),  # Region Text Color
-                    "counts": 0,  # Счётчик для этой зоны
-                    "tracked_ids": set() #Id которые уже были в зоне 
-                })
-                current_zone_points = []  # Сбрасываем текущие точки
-                if color_index<3:
-                    color_index += 1  # Переходим к следующему цвету
-        
+                if len(created_regions) == 0:
+                    created_regions.append({
+                        "name": "start Region",  # !!!!!!!!!!!!!!
+                        "polygon": polygon,  # Polygon points
+                        "dragging": False,
+                        "region_color": zone_colors[color_index % len(zone_colors)],  # Цвет из списка
+                        "text_color": (255, 255, 255),  # Region Text Color
+                        "counts": 0,  # Счётчик для этой зоны
+                        "tracked_ids": set(),  # Id которые уже были в зоне
+                    })
+                    current_zone_points = []  # Сбрасываем текущие точки
+                    if color_index < 2:
+                        color_index += 1  # Переходим к следующему цвету
+                else:
+                    polygon = Polygon(current_zone_points)
+                    created_regions.append({
+                        "name": "end Region",  # !!!!!!!!!!!!!!
+                        "polygon": polygon,  # Polygon points
+                        "dragging": False,
+                        "region_color": zone_colors[color_index % len(zone_colors)],  # Цвет из списка
+                        "text_color": (255, 255, 255),  # Region Text Color
+                        "counts": 0,  # Счётчик для этой зоны
+                        "tracked_ids": set(),  # Id которые уже были в зоне
+                    })
+                    current_zone_points = []  # Сбрасываем текущие точки
+                    if color_index < 2:
+                        color_index += 1  # Переходим к следующему цвету
+
         for region in created_regions:
             if region["polygon"].contains(Point((x, y))):
                 current_region = region
@@ -93,17 +109,18 @@ def mouse_callback(event, x, y, flags, param):
         if current_region is not None and current_region["dragging"]:
             current_region["dragging"] = False
 
+
 def run(
-    weights="yolo11n.pt",
-    source=None,
-    device="cpu",
-    view_img=False,
-    save_img=False,
-    exist_ok=False,
-    classes=None,
-    line_thickness=2,
-    track_thickness=2,
-    region_thickness=2,
+        weights="yolo11n.pt",
+        source=None,
+        device="cpu",
+        view_img=False,
+        save_img=False,
+        exist_ok=False,
+        classes=None,
+        line_thickness=2,
+        track_thickness=2,
+        region_thickness=2,
 ):
     """
     Run Region counting on a video using YOLOv8 and ByteTrack.
@@ -146,7 +163,7 @@ def run(
     # save_dir = increment_path(Path("ultralytics_rc_output") / "exp", exist_ok)
     # save_dir.mkdir(parents=True, exist_ok=True)
     # video_writer = cv2.VideoWriter(str(save_dir / f"{Path(source).stem}.mp4"), fourcc, fps, (frame_width, frame_height))
-    
+
     paused = False  # Флаг для паузы
 
     # Iterate over video frames
@@ -156,7 +173,8 @@ def run(
             if not success:
                 break
             vid_frame_count += 1
-
+            if vid_frame_count % 3 != 0:
+                continue
             # Extract the results
             results = model.track(frame, persist=True, classes=classes)
 
@@ -182,8 +200,12 @@ def run(
                     for region in created_regions:
                         if region["polygon"].contains(Point((bbox_center[0], bbox_center[1]))):
                             # Если объект находится в зоне и его ID ещё не добавлен в tracked_ids, увеличиваем счётчик
-                            if track_id not in region["tracked_ids"]:
+
+                            if region["name"] == "end Region" and (track_id in created_regions[0]["tracked_ids"]) and (
+                                    track_id not in created_regions[1]["tracked_ids"]):
                                 region["counts"] += 1  # Увеличиваем счётчик
+                                region["tracked_ids"].add(track_id)  # Добавляем ID в список учтённых
+                            if region["name"] == "start Region":
                                 region["tracked_ids"].add(track_id)  # Добавляем ID в список учтённых
 
             # Draw regions (Polygons/Rectangles)
@@ -208,7 +230,8 @@ def run(
                     -1,
                 )
                 cv2.putText(
-                    frame, region_label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, region_text_color, line_thickness
+                    frame, region_label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, region_text_color,
+                    line_thickness
                 )
                 cv2.polylines(frame, [polygon_coords], isClosed=True, color=region_color, thickness=region_thickness)
 
@@ -216,14 +239,14 @@ def run(
                 if vid_frame_count == 1:
                     cv2.namedWindow("Regions Counter")
                     cv2.setMouseCallback("Regions Counter", mouse_callback)
-            
+
                 cv2.imshow("Regions Counter", frame)
 
-            #if save_img:
-                #video_writer.write(frame)
+            # if save_img:
+            # video_writer.write(frame)
 
-            #for region in created_regions:  # Reinitialize count for each region
-                #region["counts"] = 0
+            # for region in created_regions:  # Reinitialize count for each region
+            # region["counts"] = 0
 
         key = cv2.waitKey(1) & 0xFF  # Ожидание нажатия клавиши
         if key == ord('q'):  # Нажатие 'q' для выхода
@@ -231,6 +254,11 @@ def run(
         elif key == ord(' '):  # Нажатие пробела для паузы
             paused = not paused  # Переключение флага паузы
 
+    counter = 0  # Начальное значение счетчика
+
+    # Запись счетчика в текстовый файл перед завершением программы
+    with open("output.txt", "w", encoding="utf-8") as file:
+        file.write("Количество машин: " + str(created_regions[1]["counts"]))
     del vid_frame_count
     # video_writer.release()
     videocapture.release()
