@@ -144,9 +144,3 @@ def run(
             paused = not paused  # Переключение флага паузы
 
     return sum([int(counted_cars[car]["start"] and counted_cars[car]["end"]) for car in counted_cars])
-
-
-if __name__ == "__main__":
-    regions = [RegionCoordinates(**region) for region in [{'region_id': 1, 'region_name': 'start', 'vertices': [Coordinates(x=57, y=239), Coordinates(x=189, y=212), Coordinates(x=225, y=234), Coordinates(x=48, y=284)]}, {'region_id': 2, 'region_name': 'end', 'vertices': [Coordinates(x=228, y=619), Coordinates(x=829, y=419), Coordinates(x=934, y=523), Coordinates(x=410, y=678)]}]]
-    print(run(regions, source=r"/Users/alexandrbelyanin/Documents/PycharmProjects/v54_good/video/5.mp4",
-              device=Device.cpu))
