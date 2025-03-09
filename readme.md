@@ -1,4 +1,57 @@
-Код лежит в regions_counter_gold.py
-Чтобы запустить: python regions_counter_gold.py --source "path/to_video" --view-img
-#Пример 
-python regions_counter_gold.py --source "C:\Users\belya\PycharmProjects\cars_detector\video\4.mp4" --view-img --device=0
+# README для проекта "Cars Detector"
+
+## Описание проекта
+Проект "Cars Detector" предназначен для обнаружения и подсчета автомобилей в видеофайлах с использованием модели YOLO (You Only Look Once). Проект позволяет определять автомобили в заданных регионах видео и подсчитывать их количество.
+
+---
+
+## Требования к системе
+1. **Python**: Версия 3.8 или выше.
+2. **CUDA** (опционально): Если вы хотите использовать GPU, убедитесь, что ваша система поддерживает CUDA 11.8 или выше.
+3. **Видеокарта NVIDIA** (опционально): Для использования GPU.
+
+---
+
+## Установка
+
+### 1. Клонирование репозитория
+Склонируйте репозиторий на ваш компьютер:
+
+```bash
+git clone https://github.com/your-repository/cars_detector.git
+cd cars_detector
+```
+
+### 2. Создание виртуальной среды
+Рекомендуется использовать виртуальную среду для изоляции зависимостей:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Для Linux/MacOS
+venv\Scripts\activate     # Для Windows
+```
+
+### 3. Установка зависимостей
+Установите все необходимые зависимости из файла requirements.txt:
+
+```bash
+pip install -r requirements.txt
+```
+
+Примечание : Если вы используете GPU, убедитесь, что версии torch и torchvision совместимы с вашей версией CUDA. Например: 
+
+```bash
+pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 --index-url https://download.pytorch.org/whl/cu118
+```
+
+## Настройка параметров
+### 1. Изменение параметров в src/main.py
+Откройте файл src/main.py и измените параметры в соответствии с вашими требованиями
+
+## Запуск проекта
+### 1. Запуск скрипта
+После настройки параметров запустите основной скрипт:
+
+```bash
+python src/main.py
+```
