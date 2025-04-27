@@ -14,4 +14,5 @@ region_coordinates = [RegionCoordinates(**region) for region in [{'region_id': 1
                                                                                    Coordinates(x=1838, y=420),
                                                                                    Coordinates(x=1488, y=657)]}]]
 #Теперь можно просто название видоса, но он должен лежать в video
-print(CountTwoRegion("4.mp4", Device.cpu, True, region_coordinates).execute())
+#print(CountTwoRegion("video_2025-03-31_17-32-37.mp4", Device.cuda, False).execute())
+print(CountTwoRegion("video_2025-03-31_17-32-38.mp4", Device.cuda, False).execute())
